@@ -348,16 +348,14 @@ def evaluate(model, criterion, data_loader, test_file_path, save_path, mode, use
         if use_gpu:
             input_ids = input_ids.cuda()
             label = label.cuda()
-        logits = model({'input_ids': input_ids, 'length': seq_len})
+        logits = model({'input_ids': input_ids,'inputid_ch': inputid_ch,'inputid_uy': inputid_uy,'length':seq_len,'ch_start':entity_start_index_ch,'ch_end':entity_end_index_ch,'uy_start':entity_start_index_uy,'uy_end':entity_end_index_uy})
+
 
         mask = (input_ids != 0).logical_and((input_ids != 1)).logical_and((input_ids != 2))
         loss = criterion(logits, label, mask)
         probs = torch.sigmoid(logits)
         if probs_all is None:
             probs_all = probs.cpu().detach().numpy()
-            seq_len_all = seq_len.numpy()
-            tok_to_orig_start_index_all = tok_to_orig_start_index.numpy()
-            tok_to_orig_end_index_all = tok_to_orig_end_index.numpy()
 
     loss_avg = loss_all / eval_steps
     print("eval loss: %f" % (loss_avg))
