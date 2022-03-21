@@ -82,7 +82,8 @@ class Transfromer_Baseline(nn.Module):
         # BertTokenizer.from_pretrained('bert-base-uncased')
         # BertModel.from_pretrained('bert-base-uncased')
         self.configuration = base_model.config
-
+        self.predicate_avgpool = nn.AdaptiveAvgPool1d(1)
+        self.predicate_maxpool = nn.AdaptiveMaxPool1d(1)
         del base_model
 
         if not args.head == '':
@@ -134,8 +135,15 @@ class Transfromer_Baseline(nn.Module):
         chentity_id,uyentity_id = self.coattention(chentity_id,uyentity_id)
         chentity_id = self.gate(chentity_id)
         uyentity_id = self.gate(uyentity_id)
+        chentity_avg_feats = self.predicate_avgpool(chentity_id).permute(0, 2, 1)
+        chentity_max_feats = self.predicate_maxpool(chentity_id).permute(0, 2, 1)
+        uyentity_avg_feats = self.predicate_avgpool(uyentity_id).permute(0, 2, 1)
+        uyentity_max_feats = self.predicate_maxpool(uyentity_id).permute(0, 2, 1)
+        chentity_id=torch.cat([chentity_avg_feats, chentity_max_feats], dim=2).squeeze(0)
+        uyentity_id=torch.cat([uyentity_avg_feats, uyentity_max_feats], dim=2).squeeze(0)
         token = torch.cat((chentity_id,uyentity_id,x_embed[0]))
-        x = self.classifier()
+
+        x = self.classifier(token)
 
         with torch.no_grad():
             prob_x = self.sigmoid(x).cpu()
